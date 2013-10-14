@@ -20,6 +20,7 @@ Gem::Specification.new do |spec|
 
   spec.add_runtime_dependency "mongo"
   spec.add_runtime_dependency "bson_ext"
+  spec.add_runtime_dependency "snoo"
 
   spec.add_development_dependency "bundler", "~> 1.3"
   spec.add_development_dependency "rake"
