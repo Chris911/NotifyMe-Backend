@@ -1,0 +1,36 @@
+PATH
+  remote: .
+  specs:
+    notifyMe (0.0.1)
+      bson_ext
+      mongo
+      snoo
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    bson (1.9.2)
+    bson_ext (1.9.2)
+      bson (~> 1.9.2)
+    httparty (0.12.0)
+      json (~> 1.8)
+      multi_xml (>= 0.5.2)
+    json (1.8.0)
+    mini_portile (0.5.1)
+    mongo (1.9.2)
+      bson (~> 1.9.2)
+    multi_xml (0.5.5)
+    nokogiri (1.6.0)
+      mini_portile (~> 0.5.0)
+    rake (10.1.0)
+    snoo (0.1.2)
+      httparty
+      nokogiri
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  bundler (~> 1.3)
+  notifyMe!
+  rake
