@@ -19,6 +19,8 @@
 
 # Learn more: http://github.com/javan/whenever
 
-every 1.minutes do
-  rake "reddit-front-page"
+set :output, "logs/tasks.log"
+
+every 30.minutes do
+  rake "cache_reddit-front-page"
 end

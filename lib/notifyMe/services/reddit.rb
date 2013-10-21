@@ -2,9 +2,14 @@ require 'snoo'
 
 module NotifyMe
   class Reddit
+    include Utilities
+
+    def cache_dir
+      NotifyMe::BASE_CACHE_DIR + "reddit/"
+    end
 
     def reddit
-      @reddit_client ||= Snoo::Client.new
+      @reddit_client ||= Snoo::Client.new(:useragent => "NotifyMe Backend Service #{NotifyMe::VERSION}")
     end
 
     def cache
@@ -13,16 +18,8 @@ module NotifyMe
       requests.each do |request|
         if request['type'] === 'reddit-front-page'
           front_page = reddit.get_listing
-
-          File.open("/home/vagrant/notifyme/NotifyMe-Backend/cache/reddit/frontpage.json", "w") do |f|
-            f.write(JSON.pretty_unparse(front_page))
-          end
-
-          #puts JSON.pretty_unparse(front_page)
-          #front_page['data']['children'].each do |submission|
-          #  puts submission['data']['title'] + " " + submission['data']['ups'].to_s
-          #end
-        end # End reddit-front-page
+          write_file(cache_dir, "frontpage.json", JSON.pretty_unparse(front_page))
+        end
       end
     end
   end
