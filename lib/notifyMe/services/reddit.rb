@@ -42,6 +42,16 @@ module NotifyMe
                                                         "type" => "reddit-front-page",
                                                         "score" => score.to_s).to_a
       users = notifications.collect{|notif| notif['user']}
+      devices = users.collect{ |user|
+        begin
+          get_devices(user)
+        rescue UserNotFound
+          puts "Invalid user: #{user}"
+        end
+      }
+      devices.flatten!
+      # We can do better here..
+      ios = devices.select{|device| device.to_s.include? "iOS"}
     end
   end
 end

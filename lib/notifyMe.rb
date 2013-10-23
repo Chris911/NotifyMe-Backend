@@ -24,4 +24,8 @@ module NotifyMe
   def self.notifications_coll
     @notifications_coll ||= db.collection("notifications")
   end
+
+  def self.users_coll
+    @users_coll ||= db.collection("users")
+  end
 end

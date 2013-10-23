@@ -13,5 +13,14 @@ module NotifyMe
     def read_file(dir, file)
       File.read(dir+file)
     end
+
+    def get_devices(user)
+      user = NotifyMe::users_coll.find_one("username" => user)
+      raise UserNotFound, "Invalid user" unless user
+      user['devices'].to_a
+    end
+  end
+
+  class UserNotFound < Exception
   end
 end
