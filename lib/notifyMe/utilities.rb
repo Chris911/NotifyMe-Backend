@@ -9,5 +9,9 @@ module NotifyMe
         f.write(content)
       end
     end
+
+    def read_file(dir, file)
+      File.read(dir+file)
+    end
   end
 end

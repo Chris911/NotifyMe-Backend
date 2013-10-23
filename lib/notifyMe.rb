@@ -20,4 +20,8 @@ module NotifyMe
   def self.requests_coll
     @requests_coll ||= db.collection("requests")
   end
+
+  def self.notifications_coll
+    @notifications_coll ||= db.collection("notifications")
+  end
 end
