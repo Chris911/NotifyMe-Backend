@@ -37,16 +37,17 @@ module NotifyMe
       user['devices'].to_a
     end
 
-    def send_android_push(regId)
-      message = "Reddit Link!!"
-      #puts "RegId: #{regId}"
+    def send_android_push(regId, body)
       post('https://notifyme-push.azure-mobile.net/api/android',
-           query: { regId: regId, message: message },
+           query: { regId: regId, body: body },
            headers: { "X-ZUMO-APPLICATION" => CONFIG['AZURE_API_SECRET'] }
       )
     end
   end
 
   class UserNotFound < Exception
+  end
+
+  class WebserverError < Exception
   end
 end

@@ -50,10 +50,22 @@ module NotifyMe
         end
       }
       devices.flatten!
-      # We can do better here..
-      #android_devices = devices.select{|device| device.to_s.include? "android"}
       android_regIds = devices.collect {|device| device['regId'] if device['type'] == "android"}
-      send_android_push(android_regIds)
+
+      posts.map! {|post| {title: post['data']['title'], url: "http://reddit.com#{post['data']['permalink']}"}}
+
+      message = "A post on reddit has over #{score} votes"
+      message = "Multiple link on reddit with over #{score} votes" if posts.count > 1
+
+      body = {
+          message: message,
+          count: posts.count.to_s,
+          links: posts.to_json,
+          type: "reddit-front-page",
+          service: "Reddit"
+      }
+
+      send_android_push(android_regIds, body)
     end
   end
 end
