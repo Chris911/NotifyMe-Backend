@@ -1,5 +1,6 @@
 # External require
 require 'mongo'
+require 'httparty'
 
 $:.unshift File.join(File.dirname(__FILE__), *%w[.. lib])
 
@@ -12,6 +13,7 @@ module NotifyMe
   include Mongo
 
   BASE_CACHE_DIR = "cache/"
+  CONFIG = YAML.load(File.open('config/config.yml'))
 
   def self.db
     @mongo_client ||= MongoClient.new.db("NotifyMe")
@@ -28,4 +30,5 @@ module NotifyMe
   def self.users_coll
     @users_coll ||= db.collection("users")
   end
+
 end

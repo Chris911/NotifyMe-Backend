@@ -19,3 +19,6 @@ doc/
 
 # RubyMine
 .idea/
+
+# Config
+config/config.yml
