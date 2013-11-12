@@ -33,15 +33,19 @@ module NotifyMe
       over_50000 = front_page['data']['children'].select{|post| post['data']['ups'] >= 50000}
 
       send_reddit_front_page(15000, over_15000) unless over_15000.empty?
-      send_reddit_front_page(25000, over_15000) unless over_25000.empty?
-      send_reddit_front_page(50000, over_15000) unless over_50000.empty?
+      send_reddit_front_page(25000, over_25000) unless over_25000.empty?
+      send_reddit_front_page(50000, over_50000) unless over_50000.empty?
     end
 
     def send_reddit_front_page(score, posts)
       notifications = NotifyMe::notifications_coll.find("service" => "reddit",
                                                         "type" => "reddit-front-page",
                                                         "score" => score.to_s).to_a
+      return if notifications.empty?
+
       users = notifications.collect{|notif| notif['uid']}
+      return if users.empty?
+
       devices = users.collect{ |uid|
         begin
           get_devices(uid)
@@ -51,6 +55,7 @@ module NotifyMe
       }
       devices.flatten!
       android_regIds = devices.collect {|device| device['regId'] if device['type'] == "android"}
+      return if android_regIds.empty?
 
       posts.map! {|post| {title: post['data']['title'], url: "http://reddit.com#{post['data']['permalink']}"}}
 

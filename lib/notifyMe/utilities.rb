@@ -42,6 +42,7 @@ module NotifyMe
            query: { regId: regId, body: body },
            headers: { "X-ZUMO-APPLICATION" => CONFIG['AZURE_API_SECRET'] }
       )
+      puts "Android notification sent!"
     end
   end
 

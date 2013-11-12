@@ -21,6 +21,10 @@
 
 set :output, "logs/tasks.log"
 
-every 30.minutes do
+every 25.minutes do
   rake "cache_reddit-front-page"
+end
+
+every 30.minutes do
+  rake "notif_reddit-front-page"
 end
