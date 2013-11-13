@@ -8,6 +8,7 @@ $:.unshift File.join(File.dirname(__FILE__), *%w[.. lib])
 require 'notifyMe/version'
 require 'notifyMe/utilities'
 require 'notifyMe/services/reddit'
+require 'notifyMe/services/weather'
 
 module NotifyMe
   include Mongo
