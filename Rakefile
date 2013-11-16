@@ -22,7 +22,7 @@ task "cache_weather-forecast" do
   NotifyMe::Weather.new.cache
 end
 
-task "notif_weather-minimum" do
-  desc "Send minimum temperation notification for all cities"
-  NotifyMe::Weather.new.send_minimum
+task "notif_weather-temperature" do
+  desc "Send  temperation notification for all cities"
+  NotifyMe::Weather.new.send_temperature
 end
