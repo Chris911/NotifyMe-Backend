@@ -97,7 +97,7 @@ module NotifyMe
       notifications.each do |notification|
         city = notification['city']
         weather.load_file(cache_dir+city+".json") if File.exist?(cache_dir+city+".json")
-        if weather.forecast_tomorrow_rain? city and notification['weather'] == 'rainy'
+        if notification['weather'] == 'rainy' and weather.forecast_tomorrow_rain? city
           devices = get_devices notification['uid']
           devices.flatten!
           android_regIds = devices.collect {|device| device['regId'] if device['type'] == "android"}
@@ -114,6 +114,24 @@ module NotifyMe
               service: "weather"
           }
           send_android_push(android_regIds, body)
+          else if notification['weather'] == 'sunny' and weather.forecast_tomorrow_sunny? city
+            devices = get_devices notification['uid']
+            devices.flatten!
+            android_regIds = devices.collect {|device| device['regId'] if device['type'] == "android"}
+
+            return if android_regIds.empty?
+
+            city_name = weather.city_name_from_file
+            city_name.empty? ?
+                message = "Looks like it will be sunny tomorrow." :
+                message = "Looks like it will be sunny tomorrow in #{city_name.capitalize}"
+            body = {
+                message: message,
+                type: "forecast",
+                service: "weather"
+            }
+            send_android_push(android_regIds, body)
+          end
         end
       end
     end
