@@ -28,3 +28,11 @@ end
 every 30.minutes do
   rake "notif_reddit-front-page"
 end
+
+every 3.hours do
+  rake "cache_weather-forecast"
+end
+
+every 4.hours do
+  rake "notif_weather"
+end
