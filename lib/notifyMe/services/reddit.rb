@@ -72,5 +72,9 @@ module NotifyMe
 
       send_android_push(android_regIds, body)
     end
+
+    def log_notification(notification)
+
+    end
   end
 end

@@ -32,4 +32,8 @@ module NotifyMe
     @users_coll ||= db.collection("users")
   end
 
+  def self.logs_coll
+    @logs_coll ||= db.collection("logs")
+  end
+
 end

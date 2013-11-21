@@ -52,7 +52,10 @@ module NotifyMe
               type: "minimum",
               service: "weather"
           }
-          send_android_push(android_regIds, body)
+          unless notification_sent_today? notification
+            send_android_push(android_regIds, body)
+            log_notification(notification)
+          end
         end
       end
       weather.unload_file
@@ -83,7 +86,10 @@ module NotifyMe
               type: "maximum",
               service: "weather"
           }
-          send_android_push(android_regIds, body)
+          unless notification_sent_today? notification
+            send_android_push(android_regIds, body)
+            log_notification(notification)
+          end
         end
       end
       weather.unload_file
@@ -113,8 +119,11 @@ module NotifyMe
               type: "forecast",
               service: "weather"
           }
-          send_android_push(android_regIds, body)
-          else if notification['weather'] == 'sunny' and weather.forecast_tomorrow_sunny? city
+          unless notification_sent_today? notification
+            send_android_push(android_regIds, body)
+            log_notification(notification)
+          end
+        else if notification['weather'] == 'sunny' and weather.forecast_tomorrow_sunny? city
             devices = get_devices notification['uid']
             devices.flatten!
             android_regIds = devices.collect {|device| device['regId'] if device['type'] == "android"}
@@ -130,10 +139,33 @@ module NotifyMe
                 type: "forecast",
                 service: "weather"
             }
-            send_android_push(android_regIds, body)
+            unless notification_sent_today? notification
+              send_android_push(android_regIds, body)
+              log_notification(notification)
+            end
           end
         end
       end
+    end
+
+    def log_notification(notification)
+      notification['time'] = Time.new.utc
+      notification.delete('_id')
+      NotifyMe::logs_coll.insert(notification)
+    end
+
+    # This will check if a notification was sent today for these filters
+    # We get the logs with date greater than today and less than tomorrow
+    # and check if the returned array is empty.
+    def notification_sent_today?(notification)
+      ! NotifyMe::logs_coll.find({
+          time: {"$gte" => today,
+                 "$lt" => tomorrow},
+          uid: notification['uid'],
+          service: notification['service'],
+          type: notification['type'],
+          city: notification['city']
+      }).to_a.empty?
     end
 
   end
