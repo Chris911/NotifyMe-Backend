@@ -43,38 +43,55 @@ module NotifyMe
                                                         "score" => score.to_s).to_a
       return if notifications.empty?
 
-      users = notifications.collect{|notif| notif['uid']}
-      return if users.empty?
+      notifications.each do |notification|
+        devices = get_devices notification['uid']
+        next if devices.nil? or devices.empty?
+        devices.flatten!
+        android_regIds = devices.collect {|device| device['regId'] if device['type'] == "android"}
+        next if android_regIds.empty?
 
-      devices = users.collect{ |uid|
-        begin
-          get_devices(uid)
-        rescue UserNotFound
-          puts "Invalid user: #{uid}"
-        end
-      }
-      devices.flatten!
-      android_regIds = devices.collect {|device| device['regId'] if device['type'] == "android"}
-      return if android_regIds.empty?
+        posts.map! {|post| {title: post['data']['title'], url: "http://reddit.com#{post['data']['permalink']}"}}
 
-      posts.map! {|post| {title: post['data']['title'], url: "http://reddit.com#{post['data']['permalink']}"}}
+        sent_posts = links_sent_today notification
+        posts.delete_if {|post| sent_posts.include? post[:url]} unless sent_posts.nil? or sent_posts.empty?
+        return if posts.empty?
 
-      message = "A post on reddit has over #{score} votes"
-      message = "Multiple link on reddit with over #{score} votes" if posts.count > 1
+        message = "A post on reddit has over #{score} votes"
+        message = "Multiple posts on reddit with over #{score} votes" if posts.count > 1
 
-      body = {
-          message: message,
-          count: posts.count.to_s,
-          links: posts.to_json,
-          type: "reddit-front-page",
-          service: "Reddit"
-      }
-
-      send_android_push(android_regIds, body)
+        body = {
+            message: message,
+            count: posts.count.to_s,
+            links: posts.to_json,
+            type: "reddit-front-page",
+            service: "Reddit"
+        }
+        send_android_push(android_regIds, body)
+        log_notification(notification, posts)
+      end
     end
 
-    def log_notification(notification)
-
+    def log_notification(notification, links)
+      notification.delete('_id')
+      notification['time'] = Time.new.utc
+      notification['links'] = links
+      NotifyMe::logs_coll.insert(notification)
     end
+
+    def links_sent_today(notification)
+      logs = NotifyMe::logs_coll.find({
+              time: {"$gte" => yesterday,
+                     "$lt" => tomorrow},
+              uid: notification['uid'],
+              service: notification['service'],
+              type: notification['type'],
+              score: notification['score']
+            })
+      posts = logs.map {|log| log['links']}
+      links = posts.map {|post| post.at(0)['url']}
+      links.uniq!
+      links
+    end
+
   end
 end

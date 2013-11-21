@@ -34,6 +34,11 @@ module NotifyMe
       Time.utc(time.year, time.month, time.day)
     end
 
+    def yesterday
+      time = Time.new.utc - (60 * 60 * 24)
+      Time.utc(time.year, time.month, time.day)
+    end
+
     def tomorrow
       time = Time.new.utc + (60 * 60 * 24)
       Time.utc(time.year, time.month, time.day)
