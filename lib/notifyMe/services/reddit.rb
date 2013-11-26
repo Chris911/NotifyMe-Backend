@@ -50,24 +50,24 @@ module NotifyMe
         android_regIds = devices.collect {|device| device['regId'] if device['type'] == "android"}
         next if android_regIds.empty?
 
-        posts.map! {|post| {title: post['data']['title'], url: "http://reddit.com#{post['data']['permalink']}"}}
+        post_to_send = posts.map {|post| {title: post['data']['title'], url: "http://reddit.com#{post['data']['permalink']}"}}
 
         sent_posts = links_sent_today notification
-        posts.delete_if {|post| sent_posts.include? post[:url]} unless sent_posts.nil? or sent_posts.empty?
-        return if posts.empty?
+        post_to_send.delete_if {|post| sent_posts.include? post[:url]} unless sent_posts.nil? or sent_posts.empty?
+        return if post_to_send.empty?
 
         message = "A post on reddit has over #{score} votes"
         message = "Multiple posts on reddit with over #{score} votes" if posts.count > 1
 
         body = {
             message: message,
-            count: posts.count.to_s,
-            links: posts.to_json,
+            count: post_to_send.count.to_s,
+            links: post_to_send.to_json,
             type: "reddit-front-page",
             service: "Reddit"
         }
         send_android_push(android_regIds, body)
-        log_notification(notification, posts)
+        log_notification(notification, post_to_send)
       end
     end
 
