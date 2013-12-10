@@ -26,3 +26,8 @@ task "notif_weather" do
   desc "Send weather notification for all cities"
   NotifyMe::Weather.new.send_weather
 end
+
+task "notif_poly" do
+  desc "Send poly notification for all users"
+  NotifyMe::Poly.new.check_results
+end

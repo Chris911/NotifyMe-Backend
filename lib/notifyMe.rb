@@ -7,8 +7,10 @@ $:.unshift File.join(File.dirname(__FILE__), *%w[.. lib])
 # Internal require
 require 'notifyMe/version'
 require 'notifyMe/utilities'
+require 'notifyMe/crypto'
 require 'notifyMe/services/reddit'
 require 'notifyMe/services/weather'
+require 'notifyMe/services/poly'
 
 module NotifyMe
   include Mongo

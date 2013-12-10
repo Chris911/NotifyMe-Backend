@@ -36,3 +36,7 @@ end
 every 4.hours do
   rake "notif_weather"
 end
+
+every 30.minutes do
+  rake "notif_poly"
+end
