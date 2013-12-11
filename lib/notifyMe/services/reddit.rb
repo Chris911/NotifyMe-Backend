@@ -19,7 +19,84 @@ module NotifyMe
         if request['type'] === 'reddit-front-page'
           front_page = reddit.get_listing
           write_file(cache_dir, "frontpage.json", JSON.pretty_unparse(front_page))
+        elsif request['type'] === 'user-comment'
+          user = request['username']
+          last_id = request['last_id']
+          if last_id == 'none'
+            write_file(cache_dir, "#{user}_comment.json", "")
+          else
+            opts = {:type => 'comments', :sort => 'new', :limit => '100', :before => last_id}
+            comments = reddit.get_user_listing user, opts
+            write_file(cache_dir, "#{user}_comment.json", JSON.pretty_unparse(comments))
+          end
         end
+      end
+    end
+
+    # Returns the thing id of the last comment with limit in days
+    # Eg. last_comment(user, 2) will return the last comment that it at most 2 days old.
+    def last_comment(user, limit)
+      limit = days_ago(limit).to_i
+      opts = {:type => 'comments', :sort => 'new', :limit => '100'}
+      comments = reddit.get_user_listing user, opts
+      last_id = nil
+      comments['data']['children'].each do |comment|
+        time = comment['data']['created']
+        if time < limit
+          return "t1_#{comment['data']['id']}"
+        end
+      end
+      last_id
+    end
+
+    def set_last_comment
+      requests = NotifyMe::requests_coll.find("service" => "reddit", "type" => "user-comment").to_a
+      return if requests.empty?
+
+      requests.each do |request|
+        user = request['username']
+        last_id = last_comment(user, 2)
+        last_id = 'none' if last_id.nil?
+        NotifyMe::requests_coll.update({username: user},
+              {
+                  "$set" => {
+                      last_id: last_id,
+                  }
+              })
+      end
+    end
+
+    def check_reddit_user_comment
+      notifications = NotifyMe::notifications_coll.find("service" => "reddit",
+                                                        "type" => "user-comment").to_a
+      notifications.each do |notification|
+        devices = get_devices notification['uid']
+        next if devices.nil? or devices.empty?
+        devices.flatten!
+        android_regIds = devices.collect {|device| device['regId'] if device['type'] == "android"}
+        next if android_regIds.empty?
+
+        user = notification['username']
+        score = notification['score']
+        unless File.exist?(cache_dir + "#{user}_comment.json")
+          self.cache
+        end
+        comments = JSON.parse(read_file(cache_dir, "#{user}_comment.json"))
+        next if comments.empty?
+        comments = comments['data']['children']
+        comments.select! { |comment| comment['data']['ups'] >= score }
+        next if comments.empty?
+        message = "One of your comments has over #{score} upvotes"
+        message = "Multiple of your comments have over #{score} upvotes" if comments.count > 1
+
+        body = {
+            message: message,
+            count: comments.count.to_s,
+            type: "user-comment",
+            service: "Reddit"
+        }
+        send_android_push(android_regIds, body)
+        #log_notification(notification, comments)
       end
     end
 

@@ -44,6 +44,11 @@ module NotifyMe
       Time.utc(time.year, time.month, time.day)
     end
 
+    def days_ago(days)
+      time = Time.new.utc - (60 * 60 * 24)*days
+      Time.utc(time.year, time.month, time.day)
+    end
+
     # HTTParty get wrapper. This serves to clean up code, as well as throw webserver errors wherever needed
     #
     def get *args, &block
