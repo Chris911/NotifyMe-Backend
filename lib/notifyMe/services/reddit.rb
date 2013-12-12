@@ -29,21 +29,32 @@ module NotifyMe
             comments = reddit.get_user_listing user, opts
             write_file(cache_dir, "#{user}_comment.json", JSON.pretty_unparse(comments))
           end
+        elsif request['type'] === 'user-submission'
+          user = request['username']
+          last_id = request['last_id']
+          if last_id == 'none'
+            write_file(cache_dir, "#{user}_submission.json", "")
+          else
+            opts = {:type => 'submitted', :sort => 'new', :limit => '100', :before => last_id}
+            comments = reddit.get_user_listing user, opts
+            write_file(cache_dir, "#{user}_submission.json", JSON.pretty_unparse(comments))
+          end
         end
       end
     end
 
-    # Returns the thing id of the last comment with limit in days
-    # Eg. last_comment(user, 2) will return the last comment that it at most 2 days old.
-    def last_comment(user, limit)
+    # Returns the thing id of the last comment/submission with limit in days
+    # Eg. last_comment(user, 2, comments) will return the last comment that it at most 2 days old.
+    # Type should be either 'comments' or 'submitted'
+    def last_thing(user, limit, type)
       limit = days_ago(limit).to_i
-      opts = {:type => 'comments', :sort => 'new', :limit => '100'}
-      comments = reddit.get_user_listing user, opts
+      opts = {:type => type, :sort => 'new', :limit => '100'}
+      things = reddit.get_user_listing user, opts
       last_id = nil
-      comments['data']['children'].each do |comment|
-        time = comment['data']['created']
+      things['data']['children'].each do |thing|
+        time = thing['data']['created']
         if time < limit
-          return "t1_#{comment['data']['id']}"
+          return thing['data']['name']
         end
       end
       last_id
@@ -55,7 +66,7 @@ module NotifyMe
 
       requests.each do |request|
         user = request['username']
-        last_id = last_comment(user, 2)
+        last_id = last_thing(user, 2, 'comments')
         last_id = 'none' if last_id.nil?
         NotifyMe::requests_coll.update({username: user},
               {
@@ -66,11 +77,28 @@ module NotifyMe
       end
     end
 
+    def set_last_submission
+      requests = NotifyMe::requests_coll.find("service" => "reddit", "type" => "user-submission").to_a
+      return if requests.empty?
+
+      requests.each do |request|
+        user = request['username']
+        last_id = last_thing(user, 2, 'submitted')
+        last_id = 'none' if last_id.nil?
+        NotifyMe::requests_coll.update({username: user},
+               {
+                   "$set" => {
+                       last_id: last_id,
+                   }
+               })
+      end
+    end
+
     def get_comment_permalink(comment)
-      parent_id = comment['data']['parent_id']
-      parent_id.slice!(0..2)
+      link_id = comment['data']['link_id']
+      link_id.slice!(0..2)
       id = comment['data']['id']
-      "http://www.reddit.com/comments/#{parent_id}/_/#{id}"
+      "http://www.reddit.com/comments/#{link_id}/_/#{id}"
     end
 
     def check_reddit_user_comment
@@ -102,10 +130,58 @@ module NotifyMe
         message = "One of your comments has over #{score} upvotes"
         message = "Multiple of your comments have over #{score} upvotes" if comments.count > 1
 
+        link = "http://reddit.com/user/#{user}"
+        link = get_comment_permalink comments[0] if comments.count == 1
+
         body = {
             message: message,
+            link: link,
             count: comments.count.to_s,
             type: "user-comment",
+            service: "Reddit"
+        }
+        send_android_push(android_regIds, body)
+        log_notification(notification, ids)
+      end
+    end
+
+    def check_reddit_user_submission
+      notifications = NotifyMe::notifications_coll.find("service" => "reddit",
+                                                        "type" => "user-submission").to_a
+      notifications.each do |notification|
+        devices = get_devices notification['uid']
+        next if devices.nil? or devices.empty?
+        devices.flatten!
+        android_regIds = devices.collect {|device| device['regId'] if device['type'] == "android"}
+        next if android_regIds.empty?
+
+        user = notification['username']
+        score = notification['score']
+        unless File.exist?(cache_dir + "#{user}_submission.json")
+          self.cache
+        end
+        submissions = JSON.parse(read_file(cache_dir, "#{user}_submission.json"))
+        next if submissions.empty?
+        submissions = submissions['data']['children']
+        submissions.select! { |submission| submission['data']['ups'] >= score }
+        next if submissions.empty?
+        ids_sent = ids_sent_today notification
+        submissions.delete_if {|submission| ids_sent.include? submission['data']['id']} unless ids_sent.nil? or ids_sent.empty?
+        next if submissions.empty?
+
+        ids = submissions.map { |submission| submission['data']['id'] }
+
+        message = "One of your submissions has over #{score} upvotes"
+        message = "Multiple of your submissions have over #{score} upvotes" if submissions.count > 1
+
+        link = "http://reddit.com/user/#{user}"
+        link = "http://reddit.com#{submissions[0]['data']['permalink']}" if submissions.count == 1
+
+        body = {
+            message: message,
+            link: link,
+            count: submissions.count.to_s,
+            type: "user-submission",
             service: "Reddit"
         }
         send_android_push(android_regIds, body)
@@ -171,7 +247,7 @@ module NotifyMe
 
     def ids_sent_today(notification)
       logs = NotifyMe::logs_coll.find({
-              time: {"$gte" => yesterday,
+              time: {"$gte" => days_ago(2),
                      "$lt" => tomorrow},
               uid: notification['uid'],
               service: notification['service'],

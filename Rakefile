@@ -17,9 +17,19 @@ task "notif_reddit-user-comment" do
   NotifyMe::Reddit.new.check_reddit_user_comment
 end
 
+task "notif_reddit-user-submission" do
+  desc "Check for notifications to send for reddit user submission"
+  NotifyMe::Reddit.new.check_reddit_user_submission
+end
+
 task "set_last-comment" do
   desc "Set the last comment ID to check for"
   NotifyMe::Reddit.new.set_last_comment
+end
+
+task "set_last-submission" do
+  desc "Set the last submission ID to check for"
+  NotifyMe::Reddit.new.set_last_submission
 end
 
 task "notif_reddit-front-page" do
