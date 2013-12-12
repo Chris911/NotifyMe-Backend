@@ -51,3 +51,13 @@ task "notif_poly" do
   desc "Send poly notification for all users"
   NotifyMe::Poly.new.check_results
 end
+
+task "cache_github" do
+  desc "Cache github repo information"
+  NotifyMe::Github.new.cache
+end
+
+task "notif_github-repo-watch" do
+  desc "Send GithuH repo watch notifications"
+  NotifyMe::Github.new.send_actions
+end

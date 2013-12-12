@@ -25,6 +25,7 @@ Gem::Specification.new do |spec|
   spec.add_runtime_dependency "OpenWeather"
   spec.add_runtime_dependency "PolyNotify"
   spec.add_runtime_dependency "encryptor"
+  spec.add_runtime_dependency "octokit"
 
   spec.add_development_dependency "bundler", "~> 1.3"
   spec.add_development_dependency "rake"

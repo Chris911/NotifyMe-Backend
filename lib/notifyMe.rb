@@ -11,6 +11,7 @@ require 'notifyMe/crypto'
 require 'notifyMe/services/reddit'
 require 'notifyMe/services/weather'
 require 'notifyMe/services/poly'
+require 'notifyMe/services/github'
 
 module NotifyMe
   include Mongo
