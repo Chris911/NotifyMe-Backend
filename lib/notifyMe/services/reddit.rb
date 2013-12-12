@@ -86,6 +86,12 @@ module NotifyMe
         comments = comments['data']['children']
         comments.select! { |comment| comment['data']['ups'] >= score }
         next if comments.empty?
+        ids_sent = ids_sent_today notification
+        comments.delete_if {|comment| ids_sent.include? comment['data']['id']} unless ids_sent.nil? or ids_sent.empty?
+        next if comments.empty?
+
+        ids = comments.map { |comment| comment['data']['id'] }
+
         message = "One of your comments has over #{score} upvotes"
         message = "Multiple of your comments have over #{score} upvotes" if comments.count > 1
 
@@ -96,7 +102,7 @@ module NotifyMe
             service: "Reddit"
         }
         send_android_push(android_regIds, body)
-        #log_notification(notification, comments)
+        log_notification(notification, ids)
       end
     end
 
@@ -127,11 +133,12 @@ module NotifyMe
         android_regIds = devices.collect {|device| device['regId'] if device['type'] == "android"}
         next if android_regIds.empty?
 
-        post_to_send = posts.map {|post| {title: post['data']['title'], url: "http://reddit.com#{post['data']['permalink']}"}}
+        ids = posts.map {|post| post['data']['id']}
+        ids_sent = ids_sent_today notification
+        posts.delete_if {|comment| ids_sent.include? comment['data']['id']} unless ids_sent.nil? or ids_sent.empty?
+        next if posts.empty?
 
-        sent_posts = links_sent_today notification
-        post_to_send.delete_if {|post| sent_posts.include? post[:url]} unless sent_posts.nil? or sent_posts.empty?
-        return if post_to_send.empty?
+        post_to_send = posts.map {|post| {title: post['data']['title'], url: "http://reddit.com#{post['data']['permalink']}"}}
 
         message = "A post on reddit has over #{score} votes"
         message = "Multiple posts on reddit with over #{score} votes" if posts.count > 1
@@ -144,18 +151,18 @@ module NotifyMe
             service: "Reddit"
         }
         send_android_push(android_regIds, body)
-        log_notification(notification, post_to_send)
+        log_notification(notification, ids)
       end
     end
 
-    def log_notification(notification, links)
+    def log_notification(notification, ids)
       notification.delete('_id')
       notification['time'] = Time.new.utc
-      notification['links'] = links
+      notification['ids'] = ids
       NotifyMe::logs_coll.insert(notification)
     end
 
-    def links_sent_today(notification)
+    def ids_sent_today(notification)
       logs = NotifyMe::logs_coll.find({
               time: {"$gte" => yesterday,
                      "$lt" => tomorrow},
@@ -163,11 +170,11 @@ module NotifyMe
               service: notification['service'],
               type: notification['type'],
               score: notification['score']
-            })
-      posts = logs.map {|log| log['links']}
-      links = posts.map {|post| post.at(0)['url']}
-      links.uniq!
-      links
+          })
+      ids = logs.map {|log| log['ids']}
+      ids.uniq!
+      ids.flatten! unless ids.nil?
+      ids
     end
 
   end
