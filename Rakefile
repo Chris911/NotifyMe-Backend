@@ -7,9 +7,19 @@ task :console do
   sh "irb -rubygems -I lib -r notifyMe.rb"
 end
 
-task "cache_reddit-front-page" do
-  desc "Cache Reddit front page"
+task "cache_reddit" do
+  desc "Cache Reddit infos"
   NotifyMe::Reddit.new.cache
+end
+
+task "notif_reddit-user-comment" do
+  desc "Check for notifications to send for reddit user comment"
+  NotifyMe::Reddit.new.check_reddit_user_comment
+end
+
+task "set_last-comment" do
+  desc "Set the last comment ID to check for"
+  NotifyMe::Reddit.new.set_last_comment
 end
 
 task "notif_reddit-front-page" do

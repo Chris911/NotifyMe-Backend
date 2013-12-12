@@ -22,11 +22,13 @@
 set :output, "logs/tasks.log"
 
 every 25.minutes do
-  rake "cache_reddit-front-page"
+  rake "cache_reddit"
 end
 
 every 30.minutes do
   rake "notif_reddit-front-page"
+  rake "notif_reddit-user-comment"
+  rake "notif_poly"
 end
 
 every 3.hours do
@@ -37,6 +39,6 @@ every 4.hours do
   rake "notif_weather"
 end
 
-every 30.minutes do
-  rake "notif_poly"
+every :day, :at => '12:01am' do
+  rake "set_last-comment"
 end
