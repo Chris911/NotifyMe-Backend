@@ -66,6 +66,13 @@ module NotifyMe
       end
     end
 
+    def get_comment_permalink(comment)
+      parent_id = comment['data']['parent_id']
+      parent_id.slice!(0..2)
+      id = comment['data']['id']
+      "http://www.reddit.com/comments/#{parent_id}/_/#{id}"
+    end
+
     def check_reddit_user_comment
       notifications = NotifyMe::notifications_coll.find("service" => "reddit",
                                                         "type" => "user-comment").to_a
