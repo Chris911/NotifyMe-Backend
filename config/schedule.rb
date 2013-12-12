@@ -31,6 +31,11 @@ every 30.minutes do
   rake "notif_poly"
 end
 
+every 35.minutes do
+  rake "notif_github-repo-watch"
+  rake "cache_github"
+end
+
 every 3.hours do
   rake "cache_weather-forecast"
 end
