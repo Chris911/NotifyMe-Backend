@@ -47,13 +47,14 @@ module NotifyMe
       android_regIds = devices.collect {|device| device['regId'] if device['type'] == "android"}
       return if android_regIds.empty?
 
+      message = "Nouvelle note de disponible!"
       body = {
-          message: "Nouvelle note de disponible!",
+          message: message,
           type: "result",
           service: "poly"
       }
       send_android_push(android_regIds, body)
-      log_notification(notification)
+      log_notification(notification, message)
     end
 
     def get_last_results(code)
@@ -64,8 +65,9 @@ module NotifyMe
       hash
     end
 
-    def log_notification(notification)
+    def log_notification(notification, message)
       notification['time'] = Time.new.utc
+      notification['message'] = message
       notification.delete('_id')
       NotifyMe::logs_coll.insert(notification)
     end

@@ -141,7 +141,7 @@ module NotifyMe
             service: "Reddit"
         }
         send_android_push(android_regIds, body)
-        log_notification(notification, ids)
+        log_notification(notification, ids, message)
       end
     end
 
@@ -185,7 +185,7 @@ module NotifyMe
             service: "Reddit"
         }
         send_android_push(android_regIds, body)
-        log_notification(notification, ids)
+        log_notification(notification, ids, message)
       end
     end
 
@@ -234,13 +234,14 @@ module NotifyMe
             service: "Reddit"
         }
         send_android_push(android_regIds, body)
-        log_notification(notification, ids)
+        log_notification(notification, ids, message)
       end
     end
 
-    def log_notification(notification, ids)
+    def log_notification(notification, ids, message)
       notification.delete('_id')
       notification['time'] = Time.new.utc
+      notification['message'] = message
       notification['ids'] = ids
       NotifyMe::logs_coll.insert(notification)
     end

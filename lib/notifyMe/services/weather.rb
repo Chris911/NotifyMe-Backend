@@ -54,7 +54,7 @@ module NotifyMe
           }
           unless notification_sent_today? notification
             send_android_push(android_regIds, body)
-            log_notification(notification)
+            log_notification(notification, message)
           end
         end
       end
@@ -88,7 +88,7 @@ module NotifyMe
           }
           unless notification_sent_today? notification
             send_android_push(android_regIds, body)
-            log_notification(notification)
+            log_notification(notification, message)
           end
         end
       end
@@ -121,7 +121,7 @@ module NotifyMe
           }
           unless notification_sent_today? notification
             send_android_push(android_regIds, body)
-            log_notification(notification)
+            log_notification(notification, message)
           end
         else if notification['weather'] == 'sunny' and weather.forecast_tomorrow_sunny? city
             devices = get_devices notification['uid']
@@ -141,15 +141,16 @@ module NotifyMe
             }
             unless notification_sent_today? notification
               send_android_push(android_regIds, body)
-              log_notification(notification)
+              log_notification(notification, message)
             end
           end
         end
       end
     end
 
-    def log_notification(notification)
+    def log_notification(notification, message)
       notification['time'] = Time.new.utc
+      notification['message'] = message
       notification.delete('_id')
       NotifyMe::logs_coll.insert(notification)
     end

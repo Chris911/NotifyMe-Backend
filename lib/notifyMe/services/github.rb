@@ -50,22 +50,25 @@ module NotifyMe
               if info['stars'].to_i > file_info['stars'].to_i
                 diff = info['stars'].to_i - file_info['stars'].to_i
                 action = action[0..-2] if diff == 1
-                send_notification(android_regIds, action, diff, info)
-                log_notification notification
+                message = "You have #{diff} new #{action} on your repo: #{info['name']}"
+                send_notification(android_regIds, message, info)
+                log_notification(notification, message)
               end
             when 'forks'
               if info['forks'].to_i > file_info['forks'].to_i
                 diff = info['forks'].to_i - file_info['forks'].to_i
                 action = action[0..-2] if diff == 1
-                send_notification(android_regIds, action, diff, info)
-                log_notification notification
+                message = "You have #{diff} new #{action} on your repo: #{info['name']}"
+                send_notification(android_regIds, message, info)
+                log_notification(notification, message)
               end
             when 'issues'
               if info['issues'].to_i > file_info['issues'].to_i
                 diff = info['issues'].to_i - file_info['issues'].to_i
                 action = action[0..-2] if diff == 1
-                send_notification(android_regIds, "open #{action}", diff, info)
-                log_notification notification
+                message = "You have #{diff} new opened #{action} on your repo: #{info['name']}"
+                send_notification(android_regIds, message, info)
+                log_notification(notification, message)
               end
             else
               # Unknown action
@@ -74,8 +77,7 @@ module NotifyMe
       end
     end
 
-    def send_notification(devices, action, diff, info)
-      message = "You have #{diff} new #{action} on your repo: #{info['name']}"
+    def send_notification(devices, message, info)
       body = {
           message: message,
           link: info['link'],
@@ -85,8 +87,9 @@ module NotifyMe
       send_android_push(devices, body)
     end
 
-    def log_notification(notification)
+    def log_notification(notification, message)
       notification['time'] = Time.new.utc
+      notification['message'] = message
       notification.delete('_id')
       NotifyMe::logs_coll.insert(notification)
     end
