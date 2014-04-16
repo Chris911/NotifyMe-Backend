@@ -53,11 +53,11 @@ task "notif_poly" do
 end
 
 task "cache_github" do
-  desc "Cache github repo information"
+  desc "Cache Github repo information"
   NotifyMe::Github.new.cache
 end
 
 task "notif_github-repo-watch" do
-  desc "Send GithuH repo watch notifications"
+  desc "Send Github repo watch notifications"
   NotifyMe::Github.new.send_actions
 end
