@@ -22,6 +22,11 @@ task "notif_reddit-user-submission" do
   NotifyMe::Reddit.new.check_reddit_user_submission
 end
 
+task "notif_reddit-subreddit-alert" do
+  desc "Check for notifications to send for reddit subreddit alert"
+  NotifyMe::Reddit.new.check_reddit_subreddit_alert
+end
+
 task "set_last-comment" do
   desc "Set the last comment ID to check for"
   NotifyMe::Reddit.new.set_last_comment
@@ -30,6 +35,11 @@ end
 task "set_last-submission" do
   desc "Set the last submission ID to check for"
   NotifyMe::Reddit.new.set_last_submission
+end
+
+task "set_last-listing" do
+  desc "Set the last listing ID to check for"
+  NotifyMe::Reddit.new.set_last_listing
 end
 
 task "notif_reddit-front-page" do

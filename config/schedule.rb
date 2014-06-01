@@ -28,6 +28,7 @@ end
 every 30.minutes do
   rake "notif_reddit-front-page"
   rake "notif_reddit-user-comment"
+  rake "notif_reddit-subreddit-alert"
   rake "notif_poly"
 end
 
@@ -46,4 +47,6 @@ end
 
 every :day, :at => '12:01am' do
   rake "set_last-comment"
+  rake "set_last-submission"
+  rake "set_last-listing"
 end

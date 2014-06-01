@@ -39,6 +39,16 @@ module NotifyMe
             comments = reddit.get_user_listing user, opts
             write_file(cache_dir, "#{user}_submission.json", JSON.pretty_unparse(comments))
           end
+        elsif request['type'] === 'subreddit-alert'
+          subreddit = request['subreddit']
+          last_id = request['last_id']
+          if last_id == 'none'
+            write_file(cache_dir, "#{subreddit}_listing.json", "")
+          else
+            opts = {:subreddit => subreddit, :sort => 'new', :limit => '100', :before => last_id}
+            links = reddit.get_listing opts
+            write_file(cache_dir, "#{subreddit}_listing.json", JSON.pretty_unparse(links))
+          end
         end
       end
     end
@@ -46,12 +56,27 @@ module NotifyMe
     # Returns the thing id of the last comment/submission with limit in days
     # Eg. last_comment(user, 2, comments) will return the last comment that it at most 2 days old.
     # Type should be either 'comments' or 'submitted'
-    def last_thing(user, limit, type)
+    def last_thing_user(user, limit, type)
       limit = days_ago(limit).to_i
       opts = {:type => type, :sort => 'new', :limit => '100'}
       things = reddit.get_user_listing user, opts
       last_id = nil
       things['data']['children'].each do |thing|
+        time = thing['data']['created']
+        if time < limit
+          return thing['data']['name']
+        end
+      end
+      last_id
+    end
+
+    def last_thing_listing(subreddit, limit)
+      limit = days_ago(limit).to_i
+      opts = {:subreddit => subreddit, :sort => 'new', :limit => '100'}
+      things = reddit.get_listing opts
+      last_id = nil
+      things['data']['children'].each do |thing|
+        next if thing['data']['stickied']
         time = thing['data']['created']
         if time < limit
           return thing['data']['name']
@@ -66,7 +91,7 @@ module NotifyMe
 
       requests.each do |request|
         user = request['username']
-        last_id = last_thing(user, 2, 'comments')
+        last_id = last_thing_user(user, 2, 'comments')
         last_id = 'none' if last_id.nil?
         NotifyMe::requests_coll.update({username: user},
               {
@@ -83,9 +108,26 @@ module NotifyMe
 
       requests.each do |request|
         user = request['username']
-        last_id = last_thing(user, 2, 'submitted')
+        last_id = last_thing_user(user, 2, 'submitted')
         last_id = 'none' if last_id.nil?
         NotifyMe::requests_coll.update({username: user},
+               {
+                   "$set" => {
+                       last_id: last_id,
+                   }
+               })
+      end
+    end
+
+    def set_last_listing
+      requests = NotifyMe::requests_coll.find("service" => "reddit", "type" => "subreddit-alert").to_a
+      return if requests.empty?
+
+      requests.each do |request|
+        subreddit = request['subreddit']
+        last_id = last_thing_listing(subreddit, 2)
+        last_id = 'none' if last_id.nil?
+        NotifyMe::requests_coll.update({subreddit: subreddit},
                {
                    "$set" => {
                        last_id: last_id,
@@ -182,6 +224,50 @@ module NotifyMe
             link: link,
             count: submissions.count.to_s,
             type: "user-submission",
+            service: "Reddit"
+        }
+        send_android_push(android_regIds, body)
+        log_notification(notification, ids, message)
+      end
+    end
+
+    def check_reddit_subreddit_alert
+      notifications = NotifyMe::notifications_coll.find("service" => "reddit",
+                                                        "type" => "subreddit-alert").to_a
+      notifications.each do |notification|
+        devices = get_devices notification['uid']
+        next if devices.nil? or devices.empty?
+        devices.flatten!
+        android_regIds = devices.collect {|device| device['regId'] if device['type'] == "android"}
+        next if android_regIds.empty?
+
+        subreddit = notification['subreddit']
+        score = notification['score']
+        unless File.exist?(cache_dir + "#{subreddit}_listing.json")
+          self.cache
+        end
+        links = JSON.parse(read_file(cache_dir, "#{subreddit}_listing.json"))
+        next if links.empty?
+        links = links['data']['children']
+        links.select! { |link| link['data']['ups'] >= score }
+        next if links.empty?
+        ids_sent = ids_sent_today notification
+        links.delete_if {|link| ids_sent.include? link['data']['id']} unless ids_sent.nil? or ids_sent.empty?
+        next if links.empty?
+
+        ids = links.map { |link| link['data']['id'] }
+
+        message = "A submission on #{subreddit} has over #{score} upvotes"
+        message = "Multiple submissions on #{subreddit} have over #{score} upvotes" if links.count > 1
+
+        link = "http://reddit.com/r/#{subreddit}"
+        link = "http://reddit.com#{links[0]['data']['permalink']}" if links.count == 1
+        puts link
+        body = {
+            message: message,
+            link: link,
+            count: links.count.to_s,
+            type: "subreddit-alert",
             service: "Reddit"
         }
         send_android_push(android_regIds, body)
