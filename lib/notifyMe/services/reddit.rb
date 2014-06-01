@@ -262,7 +262,6 @@ module NotifyMe
 
         link = "http://reddit.com/r/#{subreddit}"
         link = "http://reddit.com#{links[0]['data']['permalink']}" if links.count == 1
-        puts link
         body = {
             message: message,
             link: link,
