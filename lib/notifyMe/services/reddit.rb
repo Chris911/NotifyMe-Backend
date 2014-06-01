@@ -249,7 +249,7 @@ module NotifyMe
         links = JSON.parse(read_file(cache_dir, "#{subreddit}_listing.json"))
         next if links.empty?
         links = links['data']['children']
-        links.select! { |link| link['data']['ups'] >= score }
+        links.select! { |link| link['data']['ups'] >= score and link['data']['stickied'] == false }
         next if links.empty?
         ids_sent = ids_sent_today notification
         links.delete_if {|link| ids_sent.include? link['data']['id']} unless ids_sent.nil? or ids_sent.empty?
